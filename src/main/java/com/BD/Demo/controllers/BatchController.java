@@ -25,7 +25,7 @@ public class BatchController {
     }
 
     @GetMapping
-    public ResponseEntity<?> categoriesList() {
+    public ResponseEntity<?> batchesList() {
         return ResponseEntity.ok(this.batchService.findAll());
     }
 

@@ -42,5 +42,5 @@ public class SalesDetail {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
     @Column(nullable = false)
-    private String state;
+    private boolean state;
 }

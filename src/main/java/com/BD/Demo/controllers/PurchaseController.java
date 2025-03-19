@@ -2,6 +2,7 @@ package com.BD.Demo.controllers;
 
 import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.BD.Demo.dto.request.PurchaseRequestDTO;
+import com.BD.Demo.dto.response.PurchaseResponseDTO;
 import com.BD.Demo.entities.Purchase;
 import com.BD.Demo.services.PurchaseService;
 
@@ -26,7 +29,7 @@ public class PurchaseController {
 
     @GetMapping
     public ResponseEntity<?> purchasesList() {
-        return ResponseEntity.ok(this.purchaseService.findAll());
+        return ResponseEntity.ok(this.purchaseService.findAllPurchasesWithBatches());
     }
 
     @GetMapping("/{id}")
@@ -39,18 +42,19 @@ public class PurchaseController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createPurchase(@RequestBody Purchase purchase) {
-        return ResponseEntity.ok(purchaseService.savePurchase(purchase));
+    public ResponseEntity<PurchaseResponseDTO> createPurchase(@RequestBody PurchaseRequestDTO purchaseRequest) {
+        PurchaseResponseDTO purchaseResponse = purchaseService.createPurchase(purchaseRequest);
+        return new ResponseEntity<>(purchaseResponse, HttpStatus.CREATED);
     }
 
-    @PutMapping("/{id}")
+    /*@PutMapping("/{id}")
     public ResponseEntity<?> updatePurchase(@PathVariable Long id, @RequestBody Purchase updatedPurchase) {
         Optional<Purchase> existingPurchase = purchaseService.findById(id);
         if (existingPurchase.isPresent()) {
             return ResponseEntity.ok(purchaseService.savePurchase(updatedPurchase));
         }
         return ResponseEntity.notFound().build();
-    }
+    }*/
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletePurchase(@PathVariable Long id) {

@@ -2,6 +2,7 @@ package com.BD.Demo.controllers;
 
 import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +13,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.BD.Demo.dto.request.PurchaseRequestDTO;
+import com.BD.Demo.dto.request.SaleRequestDTO;
+import com.BD.Demo.dto.response.PurchaseResponseDTO;
+import com.BD.Demo.dto.response.SaleResponseDTO;
 import com.BD.Demo.entities.Sale;
 import com.BD.Demo.services.SaleService;
 
@@ -26,7 +31,7 @@ public class SaleController {
 
     @GetMapping
     public ResponseEntity<?> salesList() {
-        return ResponseEntity.ok(this.saleService.findAll());
+        return ResponseEntity.ok(saleService.findAllSales());
     }
 
     @GetMapping("/{id}")
@@ -39,18 +44,19 @@ public class SaleController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createSale(@RequestBody Sale sale) {
-        return ResponseEntity.ok(saleService.saveSale(sale));
+    public ResponseEntity<SaleResponseDTO> createSale(@RequestBody SaleRequestDTO saleRequest) {
+        SaleResponseDTO saleResponse = saleService.createSale(saleRequest);
+        return new ResponseEntity<>(saleResponse, HttpStatus.CREATED);
     }
 
-    @PutMapping("/{id}")
+    /*@PutMapping("/{id}")
     public ResponseEntity<?> updateSale(@PathVariable Long id, @RequestBody Sale updatedSale) {
         Optional<Sale> existingSale = saleService.findById(id);
         if (existingSale.isPresent()) {
             return ResponseEntity.ok(saleService.saveSale(updatedSale));
         }
         return ResponseEntity.notFound().build();
-    }
+    }*/
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteSale(@PathVariable Long id) {
