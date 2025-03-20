@@ -2,49 +2,30 @@ package com.BD.Demo.services;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-<<<<<<< HEAD
-=======
 import java.util.ArrayList;
 import java.util.HashMap;
->>>>>>> 881e052
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-<<<<<<< HEAD
-=======
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
->>>>>>> 881e052
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.BD.Demo.dto.request.SaleRequestDTO;
-import com.BD.Demo.dto.request.SalesDetailRequestDTO;
-<<<<<<< HEAD
-import com.BD.Demo.dto.response.SaleResponseDTO;
-import com.BD.Demo.dto.response.SalesDTO;
-=======
-import com.BD.Demo.dto.response.DailyProfitDetailDTO;
-import com.BD.Demo.dto.response.ProductProfitDetailDTO;
 import com.BD.Demo.dto.response.ProductResponseDTO;
 import com.BD.Demo.dto.response.ProfitDetailDTO;
 import com.BD.Demo.dto.response.SaleResponseDTO;
 import com.BD.Demo.dto.response.SalesDTO;
 import com.BD.Demo.dto.response.TotalProfitDTO;
->>>>>>> 881e052
 import com.BD.Demo.entities.Batch;
 import com.BD.Demo.entities.Sale;
 import com.BD.Demo.entities.SalesDetail;
 import com.BD.Demo.entities.Salesman;
-<<<<<<< HEAD
-=======
 import com.BD.Demo.exceptions.BatchNotFoundException;
 import com.BD.Demo.exceptions.InsufficientStockException;
 import com.BD.Demo.exceptions.SalesmanNotFoundException;
->>>>>>> 881e052
 import com.BD.Demo.repositories.BatchRepository;
 import com.BD.Demo.repositories.SaleRepository;
 import com.BD.Demo.repositories.SalesDetailRepository;
@@ -79,53 +60,6 @@ public class SaleService {
     }
 
     @Transactional
-<<<<<<< HEAD
-    public SaleResponseDTO createSale(SaleRequestDTO saleRequest) {
-        Salesman salesman = salesmanRepository.findByFullName(saleRequest.getSalesmanName())
-            .orElseThrow(() -> new RuntimeException("Salesman not found"));
-        
-        Sale sale = new Sale();
-        sale.setSalesman(salesman);
-        sale.setSaleDate(LocalDate.now());
-        sale.setTotalAmount(BigDecimal.ZERO);
-        sale.setState(true);
-        sale = saleRepository.save(sale);
-
-        BigDecimal totalAmount = BigDecimal.ZERO;
-
-        for (SaleRequestDTO.SalesDetailRequestDTO detail : saleRequest.getDetails()) {
-            Batch batch = batchRepository.findById(detail.getBatchId())
-                    .orElseThrow(() -> new RuntimeException("Batch not found"));
-
-            if (batch.getQuantity() < detail.getQuantity()) {
-                throw new RuntimeException("Insufficient stock in batch " + batch.getBatchNumber());
-            }
-
-            batch.setQuantity(batch.getQuantity() - detail.getQuantity());
-            batchRepository.save(batch);
-
-            SalesDetail saleDetail = new SalesDetail();
-            saleDetail.setSale(sale);
-            saleDetail.setBatch(batch);
-            saleDetail.setQuantity(detail.getQuantity());
-
-            BigDecimal unitPrice = detail.getUnitPrice();
-            saleDetail.setUnitPrice(detail.getUnitPrice());
-
-            BigDecimal quantity = BigDecimal.valueOf(detail.getQuantity());
-            BigDecimal subtotal = quantity.multiply(unitPrice);
-            
-            saleDetail.setSubtotal(subtotal);
-            saleDetail.setState(true);
-            salesDetailRepository.save(saleDetail);
-
-            totalAmount = totalAmount.add(subtotal); // Sumar al total de la venta
-        }
-
-        sale.setTotalAmount(totalAmount);
-        saleRepository.save(sale);
-
-=======
     public SaleResponseDTO create(SaleRequestDTO saleRequest) {
         Optional<Salesman> currentSalesman = salesmanRepository.findByCi(saleRequest.getCi());
 
@@ -148,7 +82,7 @@ public class SaleService {
         for (SaleRequestDTO.SalesDetailRequestDTO detail : saleRequest.getDetails()) {
             Batch batch = batchRepository.findById(detail.getBatchId())
                 .orElseThrow(() -> new BatchNotFoundException("No se encuentra el lote."));
-    
+            
             if (batch.getQuantity() < detail.getQuantity()) {
                 throw new InsufficientStockException("Stock insuficiente en el lote especificado.");
             }
@@ -177,7 +111,6 @@ public class SaleService {
         sale.setTotalAmount(totalAmount);
         saleRepository.save(sale);
     
->>>>>>> 881e052
         return new SaleResponseDTO(
             sale.getSaleId(), sale.getSalesman(), sale.getSaleDate(), sale.getTotalAmount(), sale.getState()
         );

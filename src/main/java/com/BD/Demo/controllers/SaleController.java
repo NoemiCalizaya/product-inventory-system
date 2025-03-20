@@ -17,14 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.BD.Demo.dto.request.PurchaseRequestDTO;
 import com.BD.Demo.dto.request.SaleRequestDTO;
-import com.BD.Demo.dto.response.DailyProfitDetailDTO;
 import com.BD.Demo.dto.response.ProductResponseDTO;
-import com.BD.Demo.dto.response.ProfitDetailDTO;
-import com.BD.Demo.dto.response.PurchaseResponseDTO;
 import com.BD.Demo.dto.response.SaleResponseDTO;
-import com.BD.Demo.dto.response.SalesDTO;
 
 import com.BD.Demo.entities.Sale;
 import com.BD.Demo.services.SaleService;
