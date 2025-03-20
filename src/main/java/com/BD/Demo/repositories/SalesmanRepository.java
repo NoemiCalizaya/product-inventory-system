@@ -10,4 +10,5 @@ import com.BD.Demo.entities.Salesman;
 @Repository
 public interface SalesmanRepository extends JpaRepository<Salesman, String>{
     Optional<Salesman> findByFullName(String fullName);
+    Optional<Salesman> findByCi(String ci);
 }

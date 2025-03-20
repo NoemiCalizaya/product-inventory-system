@@ -39,4 +39,8 @@ public class BatchService {
         batchRepository.deleteById(id);
     }
 
+    public List<Batch> getLowStockProducts(int threshold) {
+        return batchRepository.findLowStockProducts(threshold);
+    }
+
 }

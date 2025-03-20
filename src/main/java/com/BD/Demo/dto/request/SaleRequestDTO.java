@@ -8,9 +8,9 @@ import java.math.BigDecimal;
 
 @Data
 public class SaleRequestDTO {
-
-    private String salesmanName;  // Nombre del vendedor
-    private List<SalesDetailRequestDTO> details;  // Detalles de los productos
+    private String ci;
+    private String salesmanName;
+    private List<SalesDetailRequestDTO> details;
 
     // Getters y setters
     public List<SalesDetailRequestDTO> getDetails() {

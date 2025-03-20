@@ -20,4 +20,9 @@ public interface BatchRepository extends JpaRepository<Batch, Long>{
     @Query("SELECT b FROM Batch b WHERE b.batchNumber = :batchNumber AND b.purchase.purchaseId = :purchaseId")
     Optional<Batch> findByBatchNumberAndPurchaseId(@Param("batchNumber") String batchNumber, @Param("purchaseId") Long purchaseId);
     
+    @Query("SELECT b FROM Batch b WHERE b.product.id = :productId AND b.quantity > 0 ORDER BY b.expirationDate ASC")
+    List<Batch> findAvailableBatchesOrderedByDate(@Param("productId") Long productId);
+
+    @Query("SELECT b FROM Batch b WHERE b.quantity < :threshold")
+    List<Batch> findLowStockProducts(@Param("threshold") int threshold);
 }

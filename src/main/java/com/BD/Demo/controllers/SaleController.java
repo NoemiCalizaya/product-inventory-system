@@ -1,5 +1,8 @@
 package com.BD.Demo.controllers;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
@@ -11,12 +14,18 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.BD.Demo.dto.request.PurchaseRequestDTO;
 import com.BD.Demo.dto.request.SaleRequestDTO;
+import com.BD.Demo.dto.response.DailyProfitDetailDTO;
+import com.BD.Demo.dto.response.ProductResponseDTO;
+import com.BD.Demo.dto.response.ProfitDetailDTO;
 import com.BD.Demo.dto.response.PurchaseResponseDTO;
 import com.BD.Demo.dto.response.SaleResponseDTO;
+import com.BD.Demo.dto.response.SalesDTO;
+
 import com.BD.Demo.entities.Sale;
 import com.BD.Demo.services.SaleService;
 
@@ -45,7 +54,7 @@ public class SaleController {
 
     @PostMapping
     public ResponseEntity<SaleResponseDTO> createSale(@RequestBody SaleRequestDTO saleRequest) {
-        SaleResponseDTO saleResponse = saleService.createSale(saleRequest);
+        SaleResponseDTO saleResponse = saleService.create(saleRequest);
         return new ResponseEntity<>(saleResponse, HttpStatus.CREATED);
     }
 
@@ -67,4 +76,17 @@ public class SaleController {
         }
         return ResponseEntity.notFound().build();
     }
+
+    @GetMapping("/top-selling-products")
+    public List<ProductResponseDTO> getTopSellingProducts(@RequestParam int topX) {
+        return saleService.getTopSellingProducts(topX);
+    }
+
+    @GetMapping("/calculateProfit")
+    public ResponseEntity<Map<String, Object>> getProfitDetails(
+            @RequestParam LocalDate startDate, 
+            @RequestParam LocalDate endDate) {
+        return ResponseEntity.ok(saleService.calculateTotalProfit(startDate, endDate));
+    }
+
 }
