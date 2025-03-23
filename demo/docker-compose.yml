@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: demo_postgres
+    environment:
+      POSTGRES_DB: db_prueba
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: noemipg
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - demo_network
+
+  app:
+    build: .
+    container_name: demo_app
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/db_prueba
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: noemipg
+    ports:
+      - "8080:8080"
+    networks:
+      - demo_network
+
+volumes:
+  postgres_data:
+
+networks:
+  demo_network:
+    driver: bridge

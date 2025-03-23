@@ -9,6 +9,7 @@ com\BD\Demo\dto\response\BatchResponseDTO.class
 com\BD\Demo\dto\response\PurchaseResponseDTO.class
 com\BD\Demo\controllers\SalesDetailController.class
 com\BD\Demo\services\PurchaseService.class
+com\BD\Demo\config\OpenAPIConfig.class
 com\BD\Demo\dto\response\ProductProfitDetailDTO.class
 com\BD\Demo\controllers\CategoryController.class
 com\BD\Demo\controllers\SalesmanController.class
