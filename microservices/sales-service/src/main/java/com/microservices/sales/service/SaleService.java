@@ -1,8 +1,10 @@
 package com.microservices.sales.service;
 
 import com.microservices.sales.client.InventoryClient;
+import com.microservices.sales.client.ProductClient;
 import com.microservices.sales.dto.*;
 import com.microservices.sales.entity.*;
+import com.microservices.sales.exceptions.SalesmanNotFoundException;
 import com.microservices.sales.repository.SaleRepository;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,28 +27,68 @@ public class SaleService {
     @Autowired
     private InventoryClient inventoryClient;
 
+    @Autowired
+    private ProductClient productClient;
+
     @Transactional
     public SaleResponseDTO createSale(SaleRequestDTO requestDTO) {
-        // Validar que el vendedor exista
-        validateSalesman(requestDTO.getSalesmanCi());
+        try {
+            validateSalesman(requestDTO.getSalesmanCi());
+            
+            // Validate stock availability for all products
+            validateStockAvailability(requestDTO.getDetails());  // Updated to match the new field name
+    
+            Sale sale = new Sale();
+            sale.setSalesmanCi(requestDTO.getSalesmanCi());
+            sale.setSaleDate(LocalDate.now());
+            sale.setState("PENDING");
+    
+            List<SaleDetail> details = createSaleDetails(sale, requestDTO.getDetails());  // Updated to match the new field name
+            BigDecimal totalAmount = calculateTotalAmount(details);
+    
+            sale.setTotalAmount(totalAmount);
+            sale.setSaleDetails(details);
+    
+            sale = saleRepository.save(sale);
+            
+            // Update inventory stock after saving the sale
+            updateInventoryStock(sale.getSaleDetails());
+            
+            return convertToResponseDTO(sale);
+        } catch (Exception e) {
+            throw new RuntimeException("Error creating sale: " + e.getMessage(), e);
+        }
+    }
+
+    private void validateStockAvailability(List<SaleDetailRequestDTO> details) {
+        if (details == null || details.isEmpty()) {
+            throw new RuntimeException("Sale details cannot be empty");
+        }
         
-        // Validar disponibilidad de stock para todos los productos
-        validateStockAvailability(requestDTO.getDetails());
-
-        Sale sale = new Sale();
-        sale.setSalesmanCi(requestDTO.getSalesmanCi());
-        sale.setSaleDate(LocalDate.now());
-        sale.setState("PENDING");
-
-        List<SaleDetail> details = createSaleDetails(sale, requestDTO.getDetails());
-        BigDecimal totalAmount = calculateTotalAmount(details);
-
-        sale.setTotalAmount(totalAmount);
-        sale.setSaleDetails(details);
-
-        sale = saleRepository.save(sale);
-        
-        return convertToResponseDTO(sale);
+        for (SaleDetailRequestDTO detail : details) {
+            if (detail.getProductCod() == null || detail.getQuantity() == null) {
+                throw new RuntimeException("Product code and quantity are required");
+            }
+            
+            try {
+                ResponseEntity<Long> batchResponse = inventoryClient.findBatchByProductCode(detail.getProductCod());
+                if (!batchResponse.getStatusCode().is2xxSuccessful() || batchResponse.getBody() == null) {
+                    throw new RuntimeException("No available batch found for product: " + detail.getProductCod());
+                }
+                Long batchId = batchResponse.getBody();
+                
+                ResponseEntity<Boolean> response = inventoryClient.checkBatchAvailability(
+                    batchId, 
+                    detail.getQuantity()
+                );
+                
+                if (!Boolean.TRUE.equals(response.getBody())) {
+                    throw new RuntimeException("Insufficient stock for product: " + detail.getProductCod());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Error validating stock for product " + detail.getProductCod() + ": " + e.getMessage());
+            }
+        }
     }
 
     @Transactional
@@ -67,35 +109,26 @@ public class SaleService {
         return convertToResponseDTO(sale);
     }
 
-    private void validateStockAvailability(List<SaleDetailRequestDTO> details) {
-        for (SaleDetailRequestDTO detail : details) {
-            ResponseEntity<Boolean> response = inventoryClient.checkBatchAvailability(
-                detail.getBatchId(), 
-                detail.getQuantity()
-            );
-            
-            if (!Boolean.TRUE.equals(response.getBody())) {
-                throw new RuntimeException("Stock insuficiente para el lote: " + detail.getBatchId());
-            }
+    private void updateInventoryStock(List<SaleDetail> saleDetails) {
+        List<BatchStockUpdate> updates = saleDetails.stream()
+            .filter(detail -> "PENDING".equals(detail.getState()))
+            .map(detail -> {
+                BatchStockUpdate update = new BatchStockUpdate();
+                update.setBatchId(detail.getBatchId());
+                update.setQuantity(detail.getQuantity());
+                update.setOperation("DECREASE");
+                return update;
+            })
+            .collect(Collectors.toList());
+
+        if (!updates.isEmpty()) {
+            StockUpdateRequest request = new StockUpdateRequest();
+            request.setUpdates(updates);
+            inventoryClient.updateBatchStock(request);
         }
     }
 
-    private void updateInventoryStock(List<SaleDetail> saleDetails) {
-        List<BatchStockUpdate> updates = saleDetails.stream()
-            .map(detail -> new BatchStockUpdate(
-                detail.getBatchId(),
-                detail.getQuantity(),
-                "DECREASE"
-            ))
-            .collect(Collectors.toList());
-
-        StockUpdateRequest updateRequest = new StockUpdateRequest();
-        updateRequest.setUpdates(updates);
-        inventoryClient.updateBatchStock(updateRequest);
-    }
-
     public List<SaleResponseDTO> getSalesBySalesman(String salesmanCi) {
-        validateSalesman(salesmanCi);
         return saleRepository.findBySalesmanCi(salesmanCi).stream()
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
@@ -108,56 +141,54 @@ public class SaleService {
     }
 
     private void validateSalesman(String salesmanCi) {
+        // TODO: Implementar validación del vendedor cuando el servicio de usuarios esté disponible
         if (salesmanCi == null || salesmanCi.trim().isEmpty()) {
-            throw new RuntimeException("CI del vendedor es requerida");
+            throw new SalesmanNotFoundException("El CI del vendedor es requerido");
         }
-        // Aquí se implementaría la llamada al servicio de usuarios
-    }
-
-    private void validateBatchAvailability(Long batchId, Integer requestedQuantity) {
-        // Aquí se implementaría la llamada al servicio de inventario para validar stock
-        if (batchId == null || requestedQuantity <= 0) {
-            throw new RuntimeException("Datos del lote inválidos");
-        }
-    }
-
-    private BigDecimal getBatchUnitPrice(Long batchId) {
-        // Aquí se implementaría la llamada al servicio de productos/inventario
-        // para obtener el precio de venta del producto
-        return BigDecimal.TEN; // Valor de ejemplo
     }
 
     private void validateSaleStateTransition(String currentState, String newState) {
-        if (currentState.equals("CANCELLED")) {
-            throw new RuntimeException("No se puede modificar una venta cancelada");
+        if (currentState.equals(newState)) {
+            return;
         }
-        if (currentState.equals("COMPLETED")) {
-            throw new RuntimeException("No se puede modificar una venta completada");
+        
+        switch (currentState) {
+            case "PENDING":
+                if (!newState.equals("COMPLETED") && !newState.equals("CANCELLED")) {
+                    throw new RuntimeException("Transición de estado inválida");
+                }
+                break;
+            case "COMPLETED":
+            case "CANCELLED":
+                throw new RuntimeException("No se puede cambiar el estado de una venta " + currentState);
+            default:
+                throw new RuntimeException("Estado de venta inválido");
         }
-        if (!newState.equals("COMPLETED") && !newState.equals("CANCELLED")) {
-            throw new RuntimeException("Estado de venta inválido");
-        }
-    }
-
-    private void updateBatchesStock(List<SaleDetail> saleDetails) {
-        // Aquí se implementaría la llamada al servicio de inventario
-        // para actualizar el stock de los lotes vendidos
     }
 
     private List<SaleDetail> createSaleDetails(Sale sale, List<SaleDetailRequestDTO> detailsDTO) {
         List<SaleDetail> details = new ArrayList<>();
-        
         for (SaleDetailRequestDTO detailDTO : detailsDTO) {
+            ResponseEntity<Long> batchResponse = inventoryClient.findBatchByProductCode(detailDTO.getProductCod());
+            if (!batchResponse.getStatusCode().is2xxSuccessful() || batchResponse.getBody() == null) {
+                throw new RuntimeException("No se encontró un lote disponible para el producto: " + detailDTO.getProductCod());
+            }
+            Long batchId = batchResponse.getBody();
+            
+            ResponseEntity<ProductPriceDTO> priceResponse = productClient.getProductPrice(batchId);
+            if (!priceResponse.getStatusCode().is2xxSuccessful() || priceResponse.getBody() == null) {
+                throw new RuntimeException("No se pudo obtener el precio del producto");
+            }
+            
             SaleDetail detail = new SaleDetail();
             detail.setSale(sale);
-            detail.setBatchId(detailDTO.getBatchId());
+            detail.setBatchId(batchId);
             detail.setQuantity(detailDTO.getQuantity());
-            detail.setUnitPrice(getBatchUnitPrice(detailDTO.getBatchId()));
+            detail.setUnitPrice(priceResponse.getBody().getPrice());
             detail.setSubtotal(detail.getUnitPrice().multiply(BigDecimal.valueOf(detail.getQuantity())));
             detail.setState("PENDING");
             details.add(detail);
         }
-        
         return details;
     }
 
@@ -182,4 +213,4 @@ public class SaleService {
         responseDTO.setDetails(detailDTOs);
         return responseDTO;
     }
-} 
+}

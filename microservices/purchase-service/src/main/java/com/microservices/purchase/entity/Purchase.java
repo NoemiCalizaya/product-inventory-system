@@ -9,6 +9,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 @Entity
 @Table(name = "purchases")
 @Data
@@ -37,5 +39,6 @@ public class Purchase {
     private String state;
     
     @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<Batch> batches;
 } 

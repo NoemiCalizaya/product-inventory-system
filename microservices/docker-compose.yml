@@ -55,11 +55,18 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
-      INVENTORY_SERVICE_URL: http://inventory-service:8080
+      INVENTORY_SERVICE_URL: inventory-service:8080
+      PRODUCT_SERVICE_URL: product-service:8080
+      LOGGING_LEVEL_COM_MICROSERVICES_SALES: TRACE
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB: DEBUG
+      LOGGING_LEVEL_FEIGN: DEBUG
+      LOGGING_LEVEL_ROOT: DEBUG
     depends_on:
       postgres:
         condition: service_healthy
       inventory-service:
+        condition: service_started
+      product-service:
         condition: service_started
     networks:
       - microservices_network
@@ -115,7 +122,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
-      INVENTORY_SERVICE_URL: http://inventory-service:8080
+      INVENTORY_SERVICE_URL: inventory-service:8080
     depends_on:
       postgres:
         condition: service_healthy
@@ -129,4 +136,4 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data: 
+  postgres_data:

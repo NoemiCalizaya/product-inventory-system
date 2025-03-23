@@ -1,12 +1,14 @@
 package com.microservices.purchase.service;
 
-import com.microservices.purchase.client.InventoryClient;
 import com.microservices.purchase.dto.BatchDTO;
+import com.microservices.purchase.dto.PurchaseDTO;
 import com.microservices.purchase.dto.PurchaseRequestDTO;
 import com.microservices.purchase.dto.PurchaseResponseDTO;
 import com.microservices.purchase.entity.Batch;
 import com.microservices.purchase.entity.Purchase;
+import com.microservices.purchase.client.InventoryClient;
 import com.microservices.purchase.repository.PurchaseRepository;
+
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,33 +32,61 @@ public class PurchaseService {
 
     @Transactional
     public PurchaseResponseDTO createPurchase(PurchaseRequestDTO requestDTO) {
-        // Validar que el vendedor exista (esto se haría con un cliente Feign al user-service)
-        validateSalesman(requestDTO.getSalesmanCi());
-        
-        // Validar que el proveedor exista (esto se haría con un cliente Feign)
-        validateSupplier(requestDTO.getSupplierId());
+        try {
+            // Validar datos
+            validateSalesman(requestDTO.getSalesmanCi());
+            validateSupplier(requestDTO.getSupplierId());
 
-        Purchase purchase = new Purchase();
-        purchase.setSalesmanCi(requestDTO.getSalesmanCi());
-        purchase.setSupplierId(requestDTO.getSupplierId());
-        purchase.setDateAcquisition(LocalDate.now());
-        purchase.setState("PENDING"); // Estados posibles: PENDING, APPROVED, REJECTED, COMPLETED
+            // Crear la compra en el servicio de inventario primero
+            PurchaseDTO inventoryPurchaseDTO = new PurchaseDTO();
+            inventoryPurchaseDTO.setSalesmanCi(requestDTO.getSalesmanCi());
+            inventoryPurchaseDTO.setSupplierId(requestDTO.getSupplierId());
+            inventoryPurchaseDTO.setDateAcquisition(LocalDate.now());
+            inventoryPurchaseDTO.setState("PENDING");
+            inventoryPurchaseDTO.setPurchaseCost(BigDecimal.ZERO);
 
-        // Guardar la compra primero para obtener el ID
-        purchase = purchaseRepository.save(purchase);
+            // Intentar crear la compra en el servicio de inventario
+            ResponseEntity<PurchaseDTO> inventoryResponse;
+            try {
+                inventoryResponse = inventoryClient.createPurchase(inventoryPurchaseDTO);
+                if (!inventoryResponse.getStatusCode().is2xxSuccessful() || inventoryResponse.getBody() == null) {
+                    throw new RuntimeException("Error al crear la compra en el servicio de inventario");
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Error al comunicarse con el servicio de inventario: " + e.getMessage());
+            }
 
-        // Crear los lotes en el inventario
-        List<Batch> batches = createBatchesInInventory(purchase.getPurchaseId(), requestDTO.getBatches());
-        purchase.setBatches(batches);
+            // Crear la compra en el servicio de compras
+            Purchase purchase = new Purchase();
+            purchase.setPurchaseId(inventoryResponse.getBody().getPurchaseId()); // Usar el mismo ID
+            purchase.setSalesmanCi(requestDTO.getSalesmanCi());
+            purchase.setSupplierId(requestDTO.getSupplierId());
+            purchase.setDateAcquisition(LocalDate.now());
+            purchase.setState("PENDING");
+            purchase.setPurchaseCost(BigDecimal.ZERO);
 
-        // Calcular costo total de la compra
-        BigDecimal totalCost = calculateTotalCost(batches);
+            Purchase savedPurchase = purchaseRepository.save(purchase);
 
-        purchase.setPurchaseCost(totalCost);
+            // Esperar a que la transacción se confirme
+            purchaseRepository.flush();
 
-        purchase = purchaseRepository.save(purchase);
-        
-        return convertToResponseDTO(purchase);
+            // Crear los lotes en el servicio de inventario
+            List<Batch> batches = createBatchesInInventory(savedPurchase.getPurchaseId(), requestDTO.getBatches());
+
+            // Asociar los lotes con la compra
+            savedPurchase.setBatches(batches);
+
+            // Calcular el costo total y actualizar la compra
+            BigDecimal totalCost = calculateTotalCost(batches);
+            savedPurchase.setPurchaseCost(totalCost);
+
+            // Guardar la compra actualizada
+            purchaseRepository.save(savedPurchase);
+
+            return convertToResponseDTO(savedPurchase);
+        } catch (Exception e) {
+            throw new RuntimeException("Error al crear la compra: " + e.getMessage(), e);
+        }
     }
 
     public List<PurchaseResponseDTO> getPurchasesBySalesman(String salesmanCi) {
@@ -105,53 +136,105 @@ public class PurchaseService {
     }
 
     private void validateBatchData(BatchDTO batchDTO) {
-        if (batchDTO.getQuantity() <= 0) {
-            throw new RuntimeException("La cantidad debe ser mayor a 0");
+        if (batchDTO.getPurchaseId() == null) {
+            throw new RuntimeException("El ID de la compra es requerido");
         }
-        if (batchDTO.getCostUnit().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("El costo unitario debe ser mayor a 0");
+        if (batchDTO.getProductCod() == null || batchDTO.getProductCod().trim().isEmpty()) {
+            throw new RuntimeException("El código del producto es requerido");
         }
-        if (batchDTO.getExpirationDate().isBefore(LocalDate.now())) {
-            throw new RuntimeException("La fecha de vencimiento no puede ser anterior a la fecha actual");
+        if (batchDTO.getQuantity() == null || batchDTO.getQuantity() <= 0) {
+            throw new RuntimeException("La cantidad debe ser mayor que cero");
         }
-    }
-
-    private void validatePurchaseStateTransition(String currentState, String newState) {
-        // Implementar lógica de transición de estados
-        // Ejemplo: PENDING -> APPROVED -> COMPLETED
-        //         PENDING -> REJECTED
-        if (currentState.equals("COMPLETED") || currentState.equals("REJECTED")) {
-            throw new RuntimeException("No se puede cambiar el estado de una compra " + currentState);
+        if (batchDTO.getCostUnit() == null || batchDTO.getCostUnit().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("El costo unitario debe ser mayor que cero");
         }
-        if (currentState.equals("PENDING") && !newState.equals("APPROVED") && !newState.equals("REJECTED")) {
-            throw new RuntimeException("Una compra pendiente solo puede ser aprobada o rechazada");
+        if (batchDTO.getBatchNumber() == null || batchDTO.getBatchNumber().trim().isEmpty()) {
+            throw new RuntimeException("El número de lote es requerido");
         }
-        if (currentState.equals("APPROVED") && !newState.equals("COMPLETED")) {
-            throw new RuntimeException("Una compra aprobada solo puede ser completada");
+        if (batchDTO.getState() == null || batchDTO.getState().trim().isEmpty()) {
+            throw new RuntimeException("El estado es requerido");
         }
     }
 
+    @Transactional
     private List<Batch> createBatchesInInventory(Long purchaseId, List<BatchDTO> batchDTOs) {
-        return batchDTOs.stream()
-                .map(batchDTO -> {
-                    // Crear un nuevo BatchDTO para enviar a inventory-service
-                    BatchDTO inventoryBatchDTO = new BatchDTO();
-                    BeanUtils.copyProperties(batchDTO, inventoryBatchDTO);
-                    inventoryBatchDTO.setPurchaseId(purchaseId); // Asegurar que el purchaseId se setea correctamente
-    
-                    // Llamada a InventoryClient
-                    ResponseEntity<BatchDTO> response = inventoryClient.createBatch(inventoryBatchDTO);
-                    if (response.getBody() == null) {
-                        throw new RuntimeException("Error al crear el lote en inventario");
-                    }
-    
-                    // Convertir la respuesta a entidad Batch
-                    Batch batch = new Batch();
-                    BeanUtils.copyProperties(response.getBody(), batch);
-                    return batch;
-                })
-                .collect(Collectors.toList());
+        // Asegurarnos de que los cambios en la base de datos estén sincronizados
+        purchaseRepository.flush();
+
+        // Esperar un momento para asegurar la sincronización entre servicios
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        List<Batch> createdBatches = new ArrayList<>();
+        Purchase purchase = purchaseRepository.findById(purchaseId)
+            .orElseThrow(() -> new RuntimeException("No se encontró la compra con ID: " + purchaseId));
+        
+        for (BatchDTO batchDTO : batchDTOs) {
+            try {
+                // Crear un nuevo DTO para enviar al servicio de inventario
+                BatchDTO inventoryBatchDTO = new BatchDTO();
+                BeanUtils.copyProperties(batchDTO, inventoryBatchDTO);
+                inventoryBatchDTO.setPurchaseId(purchaseId);
+                
+                // Validar y establecer valores requeridos
+                if (inventoryBatchDTO.getProductCod() == null || inventoryBatchDTO.getProductCod().trim().isEmpty()) {
+                    throw new RuntimeException("El código del producto es requerido");
+                }
+                
+                if (inventoryBatchDTO.getQuantity() == null || inventoryBatchDTO.getQuantity() <= 0) {
+                    throw new RuntimeException("La cantidad debe ser mayor que cero");
+                }
+                
+                if (inventoryBatchDTO.getCostUnit() == null || inventoryBatchDTO.getCostUnit().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new RuntimeException("El costo unitario debe ser mayor que cero");
+                }
+                
+                // Establecer valores por defecto si no están presentes
+                if (inventoryBatchDTO.getBatchNumber() == null) {
+                    inventoryBatchDTO.setBatchNumber(generateUniqueBatchNumber());
+                }
+                if (inventoryBatchDTO.getState() == null) {
+                    inventoryBatchDTO.setState("ACTIVE");
+                }
+                if (inventoryBatchDTO.getAvailableQuantity() == null) {
+                    inventoryBatchDTO.setAvailableQuantity(inventoryBatchDTO.getQuantity());
+                }
+                if (inventoryBatchDTO.getManufacturingDate() == null) {
+                    inventoryBatchDTO.setManufacturingDate(LocalDate.now());
+                }
+
+                // Validar datos antes de enviar
+                validateBatchData(inventoryBatchDTO);
+
+                // Crear el lote en el servicio de inventario
+                ResponseEntity<BatchDTO> response = inventoryClient.createBatch(inventoryBatchDTO);
+                
+                if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                    throw new RuntimeException("Error al crear el lote en el servicio de inventario");
+                }
+                
+                // Crear el lote en el servicio de compras
+                Batch batch = new Batch();
+                BeanUtils.copyProperties(response.getBody(), batch);
+                batch.setPurchase(purchase); // Establecer la relación con la compra
+                createdBatches.add(batch);
+                
+            } catch (Exception e) {
+                throw new RuntimeException("Error al crear el lote: " + e.getMessage());
+            }
+        }
+        
+        return createdBatches;
     }
+
+    // Método para generar un número único de lote
+    private String generateUniqueBatchNumber() {
+        return "BATCH-" + System.currentTimeMillis(); // Esto generará un número basado en el tiempo
+    }
+        
 
     private BigDecimal calculateTotalCost(List<Batch> batches) {
         return batches.stream()
@@ -173,5 +256,20 @@ public class PurchaseService {
         
         responseDTO.setBatches(batchDTOs);
         return responseDTO;
+    }
+
+    private void validatePurchaseStateTransition(String currentState, String newState) {
+        // Implementar lógica de transición de estados
+        // Ejemplo: PENDING -> APPROVED -> COMPLETED
+        //         PENDING -> REJECTED
+        if (currentState.equals("COMPLETED") || currentState.equals("REJECTED")) {
+            throw new RuntimeException("No se puede cambiar el estado de una compra " + currentState);
+        }
+        if (currentState.equals("PENDING") && !newState.equals("APPROVED") && !newState.equals("REJECTED")) {
+            throw new RuntimeException("Una compra pendiente solo puede ser aprobada o rechazada");
+        }
+        if (currentState.equals("APPROVED") && !newState.equals("COMPLETED")) {
+            throw new RuntimeException("Una compra aprobada solo puede ser completada");
+        }
     }
 }

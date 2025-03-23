@@ -15,7 +15,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Sale {
-    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "sale_id")
@@ -35,4 +34,4 @@ public class Sale {
     
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL)
     private List<SaleDetail> saleDetails;
-} 
+}

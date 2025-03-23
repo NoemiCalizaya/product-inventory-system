@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SaleDetailRequestDTO {
-    private Long batchId;
+    private String productCod;
     private Integer quantity;
 } 

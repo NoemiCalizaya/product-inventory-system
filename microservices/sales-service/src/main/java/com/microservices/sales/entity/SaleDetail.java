@@ -13,7 +13,6 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SaleDetail {
-    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -37,4 +36,4 @@ public class SaleDetail {
     
     @Column(name = "state")
     private String state;
-} 
+}

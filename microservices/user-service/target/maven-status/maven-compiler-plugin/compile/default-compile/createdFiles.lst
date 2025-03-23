@@ -1,0 +1,8 @@
+com\microservices\user\dto\CreateSalesmanRequest.class
+com\microservices\user\dto\SalesmanResponse.class
+com\microservices\user\controller\SalesmanController.class
+com\microservices\user\repository\SalesmanRepository.class
+com\microservices\user\service\SalesmanService.class
+com\microservices\user\entity\Salesman.class
+com\microservices\user\UserServiceApplication.class
+com\microservices\user\dto\SalesmanDTO.class

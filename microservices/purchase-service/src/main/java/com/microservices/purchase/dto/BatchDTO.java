@@ -12,12 +12,13 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class BatchDTO {
     private Long batchId;
-    private String productCod;
     private String batchNumber;
+    private String productCod;
+    private Long purchaseId;
+    private Integer quantity;
+    private Integer availableQuantity;
+    private BigDecimal costUnit;
     private LocalDate expirationDate;
     private LocalDate manufacturingDate;
-    private Integer quantity;
-    private BigDecimal costUnit;
     private String state;
-    private Long purchaseId; // Agregado para la relación con la compra
 }
