@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Sistema de Gestión de Inventario
 
 Un sistema integral de gestión de inventario construido con Spring Boot que maneja productos, compras, ventas y seguimiento de inventario.
@@ -87,3 +88,10 @@ docker-compose logs -f
 # Ver estado de los servicios
 docker-compose ps
 ```
+=======
+<<<<<<< HEAD
+# Product Inventory System
+=======
+# Product Inventory System
+>>>>>>> 9172491 (adding adding business logic)
+>>>>>>> ada7324c114459081cccb2b4f6e2e33eca28c2bb

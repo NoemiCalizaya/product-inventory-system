@@ -31,12 +31,17 @@ public class SalesmanService {
         return salesmanRepository.save(salesman);
     }
 
+<<<<<<< HEAD
     public Optional<Salesman> updateSalesman(String ci, Salesman salesman) {
         return salesmanRepository.findById(ci)
                 .map(existingSalesman -> {
                     salesman.setCi(ci);
                     return salesmanRepository.save(salesman);
                 });
+=======
+    public Salesman updateSalesman(Salesman salesman) {
+        return salesmanRepository.save(salesman);
+>>>>>>> ada7324c114459081cccb2b4f6e2e33eca28c2bb
     }
 
     public void deleteSalesman(String ci) {

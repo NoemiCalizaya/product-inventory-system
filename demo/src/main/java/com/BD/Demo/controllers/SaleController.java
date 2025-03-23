@@ -17,12 +17,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+<<<<<<< HEAD
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+=======
+>>>>>>> ada7324c114459081cccb2b4f6e2e33eca28c2bb
 import com.BD.Demo.dto.request.SaleRequestDTO;
 import com.BD.Demo.dto.response.ProductResponseDTO;
 import com.BD.Demo.dto.response.SaleResponseDTO;
@@ -32,7 +35,10 @@ import com.BD.Demo.services.SaleService;
 
 @RestController
 @RequestMapping("/api/sale")
+<<<<<<< HEAD
 @Tag(name = "Sale", description = "Sale management APIs")
+=======
+>>>>>>> ada7324c114459081cccb2b4f6e2e33eca28c2bb
 public class SaleController {
     private final SaleService saleService;
 
@@ -79,6 +85,7 @@ public class SaleController {
         return ResponseEntity.notFound().build();
     }
 
+<<<<<<< HEAD
     @Operation(summary = "Get top selling products", description = "Returns a list of top selling products")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved top selling products")
     @GetMapping("/top-selling-products")
@@ -94,6 +101,17 @@ public class SaleController {
     public ResponseEntity<Map<String, Object>> getProfitDetails(
             @Parameter(description = "Start date (YYYY-MM-DD)") @RequestParam LocalDate startDate,
             @Parameter(description = "End date (YYYY-MM-DD)") @RequestParam LocalDate endDate) {
+=======
+    @GetMapping("/top-selling-products")
+    public List<ProductResponseDTO> getTopSellingProducts(@RequestParam int topX) {
+        return saleService.getTopSellingProducts(topX);
+    }
+
+    @GetMapping("/calculateProfit")
+    public ResponseEntity<Map<String, Object>> getProfitDetails(
+            @RequestParam LocalDate startDate, 
+            @RequestParam LocalDate endDate) {
+>>>>>>> ada7324c114459081cccb2b4f6e2e33eca28c2bb
         return ResponseEntity.ok(saleService.calculateTotalProfit(startDate, endDate));
     }
 

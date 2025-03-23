@@ -12,7 +12,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
+<<<<<<< HEAD
 @Table(name = "salesmen")
+=======
+@Table(name = "salesmans")
+>>>>>>> ada7324c114459081cccb2b4f6e2e33eca28c2bb
 @NoArgsConstructor
 @AllArgsConstructor
 @Data

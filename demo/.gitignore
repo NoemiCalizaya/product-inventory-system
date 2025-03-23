@@ -31,6 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+<<<<<<< HEAD
 
 ### Environment ###
 .env
@@ -41,3 +42,5 @@ logs/
 
 ### Docker ###
 docker-compose.override.yml
+=======
+>>>>>>> ada7324c114459081cccb2b4f6e2e33eca28c2bb
