@@ -6,6 +6,7 @@ import com.microservices.purchase.dto.PurchaseRequestDTO;
 import com.microservices.purchase.dto.PurchaseResponseDTO;
 import com.microservices.purchase.entity.Batch;
 import com.microservices.purchase.entity.Purchase;
+import com.microservices.purchase.exceptions.PurchaseCreationException;
 import com.microservices.purchase.client.InventoryClient;
 import com.microservices.purchase.repository.PurchaseRepository;
 
@@ -37,7 +38,7 @@ public class PurchaseService {
             validateSalesman(requestDTO.getSalesmanCi());
             validateSupplier(requestDTO.getSupplierId());
 
-            // Crear la compra en el servicio de inventario primero
+            //Servicio de inventario
             PurchaseDTO inventoryPurchaseDTO = new PurchaseDTO();
             inventoryPurchaseDTO.setSalesmanCi(requestDTO.getSalesmanCi());
             inventoryPurchaseDTO.setSupplierId(requestDTO.getSupplierId());
@@ -45,7 +46,6 @@ public class PurchaseService {
             inventoryPurchaseDTO.setState("PENDING");
             inventoryPurchaseDTO.setPurchaseCost(BigDecimal.ZERO);
 
-            // Intentar crear la compra en el servicio de inventario
             ResponseEntity<PurchaseDTO> inventoryResponse;
             try {
                 inventoryResponse = inventoryClient.createPurchase(inventoryPurchaseDTO);
@@ -56,9 +56,9 @@ public class PurchaseService {
                 throw new RuntimeException("Error al comunicarse con el servicio de inventario: " + e.getMessage());
             }
 
-            // Crear la compra en el servicio de compras
+            // Servicio de compras
             Purchase purchase = new Purchase();
-            purchase.setPurchaseId(inventoryResponse.getBody().getPurchaseId()); // Usar el mismo ID
+            purchase.setPurchaseId(inventoryResponse.getBody().getPurchaseId());
             purchase.setSalesmanCi(requestDTO.getSalesmanCi());
             purchase.setSupplierId(requestDTO.getSupplierId());
             purchase.setDateAcquisition(LocalDate.now());
@@ -67,53 +67,27 @@ public class PurchaseService {
 
             Purchase savedPurchase = purchaseRepository.save(purchase);
 
-            // Esperar a que la transacción se confirme
+            //transacción
             purchaseRepository.flush();
 
-            // Crear los lotes en el servicio de inventario
+            //lotes en el servicio de inventario
             List<Batch> batches = createBatchesInInventory(savedPurchase.getPurchaseId(), requestDTO.getBatches());
 
-            // Asociar los lotes con la compra
+            // Asociar lotes con la compra
             savedPurchase.setBatches(batches);
 
-            // Calcular el costo total y actualizar la compra
+            // costo total y actualizar la compra
             BigDecimal totalCost = calculateTotalCost(batches);
             savedPurchase.setPurchaseCost(totalCost);
 
-            // Guardar la compra actualizada
             purchaseRepository.save(savedPurchase);
 
             return convertToResponseDTO(savedPurchase);
         } catch (Exception e) {
-            throw new RuntimeException("Error al crear la compra: " + e.getMessage(), e);
+            throw new PurchaseCreationException("Error al crear la compra: " + e.getMessage(), e);
         }
     }
 
-    public List<PurchaseResponseDTO> getPurchasesBySalesman(String salesmanCi) {
-        validateSalesman(salesmanCi);
-        return purchaseRepository.findBySalesmanCi(salesmanCi).stream()
-                .map(this::convertToResponseDTO)
-                .collect(Collectors.toList());
-    }
-
-    public List<PurchaseResponseDTO> getPurchasesBySalesmanAndState(String salesmanCi, String state) {
-        validateSalesman(salesmanCi);
-        return purchaseRepository.findBySalesmanCiAndState(salesmanCi, state).stream()
-                .map(this::convertToResponseDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional
-    public PurchaseResponseDTO updatePurchaseState(Long purchaseId, String newState) {
-        Purchase purchase = purchaseRepository.findById(purchaseId)
-                .orElseThrow(() -> new RuntimeException("Compra no encontrada"));
-        
-        validatePurchaseStateTransition(purchase.getState(), newState);
-        purchase.setState(newState);
-        
-        purchase = purchaseRepository.save(purchase);
-        return convertToResponseDTO(purchase);
-    }
 
     public PurchaseResponseDTO getPurchaseById(Long purchaseId) {
         return purchaseRepository.findById(purchaseId)
@@ -158,10 +132,10 @@ public class PurchaseService {
 
     @Transactional
     private List<Batch> createBatchesInInventory(Long purchaseId, List<BatchDTO> batchDTOs) {
-        // Asegurarnos de que los cambios en la base de datos estén sincronizados
+        
         purchaseRepository.flush();
 
-        // Esperar un momento para asegurar la sincronización entre servicios
+        // Sincronización
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
@@ -174,12 +148,11 @@ public class PurchaseService {
         
         for (BatchDTO batchDTO : batchDTOs) {
             try {
-                // Crear un nuevo DTO para enviar al servicio de inventario
+                // Creando un nuevo DTO para enviar al servicio de inventario
                 BatchDTO inventoryBatchDTO = new BatchDTO();
                 BeanUtils.copyProperties(batchDTO, inventoryBatchDTO);
                 inventoryBatchDTO.setPurchaseId(purchaseId);
                 
-                // Validar y establecer valores requeridos
                 if (inventoryBatchDTO.getProductCod() == null || inventoryBatchDTO.getProductCod().trim().isEmpty()) {
                     throw new RuntimeException("El código del producto es requerido");
                 }
@@ -192,7 +165,7 @@ public class PurchaseService {
                     throw new RuntimeException("El costo unitario debe ser mayor que cero");
                 }
                 
-                // Establecer valores por defecto si no están presentes
+                // Estableciendo valores por defecto si no están presentes
                 if (inventoryBatchDTO.getBatchNumber() == null) {
                     inventoryBatchDTO.setBatchNumber(generateUniqueBatchNumber());
                 }
@@ -206,20 +179,20 @@ public class PurchaseService {
                     inventoryBatchDTO.setManufacturingDate(LocalDate.now());
                 }
 
-                // Validar datos antes de enviar
+                // Validando datos antes de enviar
                 validateBatchData(inventoryBatchDTO);
 
-                // Crear el lote en el servicio de inventario
+                // Creando el lote en el servicio de inventario
                 ResponseEntity<BatchDTO> response = inventoryClient.createBatch(inventoryBatchDTO);
                 
                 if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                     throw new RuntimeException("Error al crear el lote en el servicio de inventario");
                 }
                 
-                // Crear el lote en el servicio de compras
+                // Creando el lote en el servicio de compras
                 Batch batch = new Batch();
                 BeanUtils.copyProperties(response.getBody(), batch);
-                batch.setPurchase(purchase); // Establecer la relación con la compra
+                batch.setPurchase(purchase);
                 createdBatches.add(batch);
                 
             } catch (Exception e) {
@@ -232,7 +205,7 @@ public class PurchaseService {
 
     // Método para generar un número único de lote
     private String generateUniqueBatchNumber() {
-        return "BATCH-" + System.currentTimeMillis(); // Esto generará un número basado en el tiempo
+        return "BATCH-" + System.currentTimeMillis();
     }
         
 
@@ -259,9 +232,6 @@ public class PurchaseService {
     }
 
     private void validatePurchaseStateTransition(String currentState, String newState) {
-        // Implementar lógica de transición de estados
-        // Ejemplo: PENDING -> APPROVED -> COMPLETED
-        //         PENDING -> REJECTED
         if (currentState.equals("COMPLETED") || currentState.equals("REJECTED")) {
             throw new RuntimeException("No se puede cambiar el estado de una compra " + currentState);
         }
