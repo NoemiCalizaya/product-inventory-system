@@ -29,7 +29,7 @@ public class SalesDetail {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sale_id", nullable = false)
-    @JsonIgnore
+    @JsonBackReference
     private Sale sale;
 
     @ManyToOne(fetch = FetchType.LAZY)
