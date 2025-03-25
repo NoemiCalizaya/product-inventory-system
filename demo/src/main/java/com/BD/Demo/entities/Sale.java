@@ -37,7 +37,6 @@ public class Sale {
     private Salesman salesman;
 
     @OneToMany(mappedBy = "sale", fetch = FetchType.LAZY)
-    @JsonManagedReference
     private List<SalesDetail> salesDetail;
 
     @Column(name = "sale_date", columnDefinition = "DATE DEFAULT CURRENT_DATE")

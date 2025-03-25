@@ -45,13 +45,10 @@ class SalesmanServiceTest {
 
     @Test
     void findAll_ShouldReturnListOfSalesmen() {
-        // Arrange
         when(salesmanRepository.findAll()).thenReturn(Arrays.asList(salesman));
 
-        // Act
         List<Salesman> result = salesmanService.findAll();
 
-        // Assert
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals("12345678", result.get(0).getCi());
@@ -59,26 +56,20 @@ class SalesmanServiceTest {
 
     @Test
     void findById_ShouldReturnSalesman() {
-        // Arrange
         when(salesmanRepository.findById("12345678")).thenReturn(Optional.of(salesman));
 
-        // Act
         Optional<Salesman> result = salesmanService.findById("12345678");
 
-        // Assert
         assertTrue(result.isPresent());
         assertEquals("John Doe", result.get().getFullName());
     }
 
     @Test
     void saveSalesman_ShouldReturnSavedSalesman() {
-        // Arrange
         when(salesmanRepository.save(any(Salesman.class))).thenReturn(salesman);
 
-        // Act
         Salesman result = salesmanService.saveSalesman(salesman);
 
-        // Assert
         assertNotNull(result);
         assertEquals("12345678", result.getCi());
         assertEquals("John Doe", result.getFullName());
@@ -86,19 +77,15 @@ class SalesmanServiceTest {
 
     @Test
     void deleteSalesman_ShouldCallRepository() {
-        // Arrange
         String ci = "12345678";
 
-        // Act
         salesmanService.deleteSalesman(ci);
 
-        // Assert
         verify(salesmanRepository, times(1)).deleteById(ci);
     }
 
     @Test
     void updateSalesman_ShouldReturnUpdatedSalesman() {
-        // Arrange
         String ci = "12345678";
         Salesman updatedSalesman = Salesman.builder()
                 .ci(ci)
@@ -111,10 +98,8 @@ class SalesmanServiceTest {
         when(salesmanRepository.findById(ci)).thenReturn(Optional.of(salesman));
         when(salesmanRepository.save(any(Salesman.class))).thenReturn(updatedSalesman);
 
-        // Act
         Optional<Salesman> result = salesmanService.updateSalesman(ci, updatedSalesman);
 
-        // Assert
         assertTrue(result.isPresent());
         assertEquals("John Updated", result.get().getFullName());
         assertEquals("987-654-321", result.get().getPhoneNumber());
