@@ -149,7 +149,6 @@ public class SaleService {
             ));
         }
 
-        // Usamos un MAP para devolver la lista de detalles y el total separado
         Map<String, Object> response = new HashMap<>();
         response.put("details", profitDetails);
         response.put("totalProfit", new TotalProfitDTO(totalProfit));

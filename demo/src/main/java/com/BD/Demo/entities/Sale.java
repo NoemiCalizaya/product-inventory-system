@@ -36,7 +36,8 @@ public class Sale {
     @JoinColumn(name = "salesman_ci", nullable = false)
     private Salesman salesman;
 
-    @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "sale", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<SalesDetail> salesDetail;
 
     @Column(name = "sale_date", columnDefinition = "DATE DEFAULT CURRENT_DATE")

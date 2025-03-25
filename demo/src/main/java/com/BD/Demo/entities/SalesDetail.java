@@ -29,10 +29,12 @@ public class SalesDetail {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sale_id", nullable = false)
+    @JsonIgnore
     private Sale sale;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "batch_id", nullable = false)
+    @JsonIgnore
     private Batch batch;
 
     @Column(nullable = false)
