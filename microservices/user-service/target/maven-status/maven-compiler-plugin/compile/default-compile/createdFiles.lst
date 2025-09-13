@@ -1,8 +1,9 @@
-com\microservices\user\dto\CreateSalesmanRequest.class
-com\microservices\user\dto\SalesmanResponse.class
-com\microservices\user\controller\SalesmanController.class
-com\microservices\user\repository\SalesmanRepository.class
-com\microservices\user\service\SalesmanService.class
-com\microservices\user\entity\Salesman.class
-com\microservices\user\UserServiceApplication.class
-com\microservices\user\dto\SalesmanDTO.class
+com\example\user_service\service\IUserService.class
+com\example\user_service\entity\Role.class
+com\example\user_service\repository\UserRepository.class
+com\example\user_service\service\UserService.class
+com\example\user_service\controller\UserController.class
+com\example\user_service\UserServiceApplication.class
+com\example\user_service\repository\RoleRepository.class
+com\example\user_service\controller\CategoryController.class
+com\example\user_service\entity\User.class
