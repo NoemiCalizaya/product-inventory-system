@@ -143,8 +143,8 @@ public class SecurityConfig {
                 .postLogoutRedirectUri("http://127.0.0.1:8080/logout")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
-                .scope("ROLE_ADMIN")
-                .scope("ROLE_USER")
+                .scope("ADMIN")
+                .scope("USER")
                 .build();
 
         return new InMemoryRegisteredClientRepository(registeredClient);
