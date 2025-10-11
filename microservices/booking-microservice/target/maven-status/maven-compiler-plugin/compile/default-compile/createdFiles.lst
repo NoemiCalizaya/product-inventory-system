@@ -1,0 +1,8 @@
+com\wannacode\bookingmicroservice\controller\BookingController.class
+com\wannacode\bookingmicroservice\entity\Order.class
+com\wannacode\bookingmicroservice\repository\OrderRepository.class
+com\wannacode\bookingmicroservice\dto\OrderDTO.class
+com\wannacode\bookingmicroservice\entity\OrderItem.class
+com\wannacode\bookingmicroservice\SecurityConfiguration.class
+com\wannacode\bookingmicroservice\BookingMicroserviceApplication.class
+com\wannacode\bookingmicroservice\client\StockClient.class
