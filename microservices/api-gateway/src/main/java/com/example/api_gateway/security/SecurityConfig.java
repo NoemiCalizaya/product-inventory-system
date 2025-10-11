@@ -36,10 +36,10 @@ public class SecurityConfig {
                         .pathMatchers("/authorized", "/logout").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/users/**").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/categories/create", "/api/products/create", "/api/suppliers/create",
-                                "/api/purchases/create", "/api/purchase-items/create")
+                                "/api/purchases/create", "/api/purchase-items/create", "/api/customers/create")
                                 .hasRole("ADMIN")
                         .pathMatchers(HttpMethod.GET, "/api/stock/**", "/api/booking/**", "/api/users/**", "/api/suppliers/create",
-                                "/api/purchases/**", "/api/purchase-items/**")
+                                "/api/purchases/**", "/api/purchase-items/**", "/api/customers/**")
                                 .permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/items/{id}", "/api/products/**", "/api/users/{id}")
                         .hasAnyRole("ADMIN", "USER")
