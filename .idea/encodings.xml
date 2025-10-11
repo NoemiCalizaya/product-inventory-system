@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/microservices/booking-microservice/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/microservices/config-server/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/microservices/discovery-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/microservices/msvc-inventory/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/microservices/msvc-products/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/microservices/msvc-purchases/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/microservices/msvc-sales/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/microservices/oauth-server/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/microservices/stock-microservice/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/microservices/user-service/src/main/java" charset="UTF-8" />
+  </component>
+</project>
