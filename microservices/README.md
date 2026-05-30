@@ -1,12 +1,13 @@
+# Microservicios — Product Inventory System
 
-# Microservicios para un Sistema de Gestión de Inventario de Productos
+Documentación general del proyecto: [README en la raíz](../README.md).
 
-Un sistema integral de gestión de inventario construido con Spring Boot que maneja usuarios, productos, compras, ventas y seguimiento de inventario.
+Arquitectura desplegable con **Docker Compose**: PostgreSQL + cinco servicios Spring Boot (usuarios, ventas, inventario, productos, compras).
 
 ### Ejecutar con Docker
 
 ```bash
-# Iniciar la aplicación y la base de datos
+cp .env.example .env   # editar credenciales
 docker-compose up --build
 ```
 

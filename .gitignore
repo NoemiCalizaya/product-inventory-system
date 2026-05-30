@@ -1,1 +1,6 @@
 .idea/
+target/
+*.class
+
+# Variables locales de Docker
+microservices/.env
